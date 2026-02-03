@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Valentine 💖</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --accent: #ff4d6d;
+      --bg-a: #ff9a9e;
+      --bg-b: #fad0c4;
+      --card-max: 420px;
+      --padding: 30px;
+    }
+    html,body{height:100%;margin:0;}
+    body {
+      height: 100vh;
+      background: linear-gradient(135deg, var(--bg-a), var(--bg-b));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .card {
+      background: white;
+      padding: var(--padding);
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      width: 92%;
+      max-width: var(--card-max);
+      position: relative;
+      box-sizing: border-box;
+      min-height: 220px;
+    }
+
+    h1 {
+      color: var(--accent);
+      margin: 6px 0 18px 0;
+      font-size: 1.25rem;
+      line-height:1.2;
+    }
+
+    .controls {
+      position: relative;
+      height: 90px; /* area where buttons will live */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 16px;
+    }
+
+    button {
+      padding: 12px 22px;
+      font-size: 15px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+
+    button:focus {
+      outline: 3px solid rgba(255,77,109,0.18);
+      outline-offset: 3px;
+    }
+
+    .yes {
+      background: var(--accent);
+      color: white;
+      z-index: 2;
+      position: relative; /* so we can compute bounding rect */
+      box-shadow: 0 6px 14px rgba(255,77,109,0.28);
+    }
+
+    .no {
+      background: #ddd;
+      position: absolute; /* positioned inside .controls */
+      left: 12px;
+      top: 12px;
+      z-index: 1;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+      transition: left .22s ease, top .22s ease, transform .15s ease;
+      touch-action: manipulation;
+    }
+
+    /* subtle scale when hovered */
+    .no:hover { transform: scale(1.05); }
+    .yes:active { transform: scale(.98); }
+
+    /* Respect users who prefer reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .no { transition: none; }
+      button { transition: none; }
+    }
+
+    /* small screens tweaks */
+    @media (max-width:420px){
+      .controls{height:110px;}
+      .card{padding:20px;}
+      h1{font-size:1.05rem;}
+      .no, .yes{padding:10px 16px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="region" aria-label="Valentine card">
+    <h1>💘 Neha, 😋 will you be my Valentine? 💘</h1>
+
+    <div class="controls" aria-hidden="false">
+      <button class="yes" id="yesBtn" aria-label="Yes, I will be your Valentine">Yes ❤️</button>
+      <button class="no" id="noBtn" aria-label="No" title="Try to click me...">No 😢</button>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const noBtn = document.getElementById('noBtn');
+      const yesBtn = document.getElementById('yesBtn');
+      const card = document.querySelector('.card');
+      const controls = document.querySelector('.controls');
+
+      // If user prefers reduced motion, do not move the button.
+      const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReduced) {
+        // Optional: make No dismissable via keyboard for accessibility
+        noBtn.addEventListener('click', ()=> alert("That's okay — be kind 💖"));
+        return;
+      }
+
+      // Helper: get bounds relative to controls container
+      function getBounds(elem){
+        const r = elem.getBoundingClientRect();
+        const c = controls.getBoundingClientRect();
+        return {
+          left: r.left - c.left,
+          top: r.top - c.top,
+          width: r.width,
+          height: r.height,
+          right: (r.left - c.left) + r.width,
+          bottom: (r.top - c.top) + r.height
+        };
+      }
+
+      function overlaps(a, b, padding=8){
+        return !(a.right + padding < b.left ||
+                 a.left - padding > b.right ||
+                 a.bottom + padding < b.top ||
+                 a.top - padding > b.bottom);
+      }
+
+      function placeNoButtonAvoidingYes(){
+        const contW = Math.max(controls.clientWidth, 1);
+        const contH = Math.max(controls.clientHeight, 1);
+        const btnW = noBtn.offsetWidth;
+        const btnH = noBtn.offsetHeight;
+
+        const yesBounds = getBounds(yesBtn);
+
+        // keep some padding from edges
+        const padding = 8;
+        const maxX = Math.max(contW - btnW - padding, padding);
+        const maxY = Math.max(contH - btnH - padding, padding);
+
+        // Try multiple times to find a non-overlapping position
+        const attempts = 12;
+        let x, y, candidateBounds;
+        for (let i=0;i<attempts;i++){
+          x = padding + Math.random() * maxX;
+          y = padding + Math.random() * maxY;
+          candidateBounds = {
+            left: x,
+            top: y,
+            width: btnW,
+            height: btnH,
+            right: x + btnW,
+            bottom: y + btnH
+          };
+          if (!overlaps(candidateBounds, yesBounds, Math.min(12, Math.round(btnW*0.25)))) {
+            // found a valid spot
+            noBtn.style.left = Math.round(x) + 'px';
+            noBtn.style.top = Math.round(y) + 'px';
+            return;
+          }
+        }
+
+        // fallback: if we couldn't find a non-overlap spot, just move to a corner
+        const fallbackX = (Math.random() > 0.5) ? padding : Math.max(contW - btnW - padding, padding);
+        const fallbackY = (Math.random() > 0.5) ? padding : Math.max(contH - btnH - padding, padding);
+        noBtn.style.left = fallbackX + 'px';
+        noBtn.style.top = fallbackY + 'px';
+      }
+
+      // Initial safe placement
+      // put yes button centered; ensure no button doesn't start overlapping
+      // ensure .controls is positioned relative area for absolute placement
+      controls.style.position = 'relative';
+
+      // On mouseenter or pointerover on the no button, move it immediately
+      function handleMoveEvent(e){
+        // if pointer is already inside the control area and near the no button, move it
+        placeNoButtonAvoidingYes();
+      }
+
+      // Move on hover / pointerenter
+      noBtn.addEventListener('pointerenter', handleMoveEvent);
+      // Also move when user tries to touch
+      noBtn.addEventListener('touchstart', function(e){
+        e.preventDefault(); // prevent quick focus/click
+        placeNoButtonAvoidingYes();
+      }, {passive:false});
+
+      // Optional: also move if the mouse gets close to the yes button to increase fun
+      yesBtn.addEventListener('pointerenter', function(){
+        // small delay so user can still click if fast
+        setTimeout(placeNoButtonAvoidingYes, 220);
+      });
+
+      // Fallback interval in case pointer events are not triggered (very old browsers)
+      let fallbackInterval = setInterval(placeNoButtonAvoidingYes, 900);
+
+      // Stop moving after the user successfully clicks Yes
+      yesBtn.addEventListener('click', function(){
+        clearInterval(fallbackInterval);
+        showAccepted();
+      });
+
+      // If user somehow clicks No, show a playful message
+      noBtn.addEventListener('click', function(){
+        alert("Aww, don't be shy 💕");
+      });
+
+      // initial placement after DOM paint
+      window.requestAnimationFrame(placeNoButtonAvoidingYes);
+      // Reposition on resize/orientation change
+      window.addEventListener('resize', placeNoButtonAvoidingYes);
+
+      // Accept animation / replacement
+      function showAccepted(){
+        document.body.innerHTML = `
+          <div style="
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            background:linear-gradient(135deg,var(--bg-a),#ff7aa0);
+            color:white;
+            text-align:center;
+            padding:20px;
+            font-family: Arial, Helvetica, sans-serif;
+          ">
+            <h1 style="margin:0; font-size:1.6rem">💖 Yayyy Neha! I knew it 😍💖</h1>
+            <p style="opacity:.95; margin:10px 0 0 0">You made my day ✨</p>
+            <img
+              src="https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif"
+              alt="Dancing"
+              style="width:260px; margin-top:18px; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,0.18);"
+            />
+          </div>
+        `;
+      }
+
+    })();
+  </script>
+</body>
+</html>
